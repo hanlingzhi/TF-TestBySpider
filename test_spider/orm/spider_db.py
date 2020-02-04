@@ -14,7 +14,7 @@ def get_product_all():
     product_data_list = AliProductTable.select()
     if isinstance(product_data_list, Iterable):
         for p in product_data_list:
-            products.append("%s:%s:%s" % (p.category1, p.category2, p.title))
+            products.append("%s:%s" % (p.category1, p.title))
     del product_data_list
     return products
 
