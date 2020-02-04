@@ -21,6 +21,8 @@ database = \
                      'port': CONST.SPIDER_DB_INFO['port'],
                      'use_unicode': True})
 
+database.sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
+
 class UnknownField(object):
     def __init__(self, *_, **__): pass
 
