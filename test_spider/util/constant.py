@@ -34,7 +34,7 @@ CONST.ALI_YUN_HEADER = {
 
 CONST.SPIDER_DB_INFO = {
     'database': 'qa_plat',
-    'host': 'dev-mysql.danke.life',
+    'host': '**********',
     'user': 'dev_qa_plat_writer',
     'password': 'VUDQWApJs3ZGT7Js',
     'port':3306,
