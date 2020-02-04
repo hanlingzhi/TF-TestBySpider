@@ -42,7 +42,7 @@ Test framework based on spider-crawler/ocr/headless browser
 ```shell
 > pip3 install scrapy  peewee
 ```
-
+## RUN
 * 本地运行爬虫检测例子:
 <pre>scrapy crawl aliyun_product_spider</pre>
 * 本地运行所有例子:
