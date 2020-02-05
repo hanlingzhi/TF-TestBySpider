@@ -45,5 +45,5 @@ class ALIProductSpider(scrapy.Spider):
                     item['description'] = service['description']
                     item['link'] = service['textLink']
                     if "%s:%s" % (service['category1'], service['title']) not in self.product_list:
-                        PrintFormatUtil.print_line("新增获取子服务{}".format(item))
+                        PrintFormatUtil.print_line("获取子服务{}".format(item))
                         yield item
