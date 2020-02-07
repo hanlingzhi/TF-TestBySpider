@@ -8,6 +8,7 @@ create_date: 2019.4.4
 usage: 数据库操作类
 '''
 
+
 # select product data
 def get_product_all():
     products = []
@@ -18,8 +19,19 @@ def get_product_all():
     del product_data_list
     return products
 
+
+def get_product_url_all():
+    urls = {}
+    product_data_list = AliProductTable.select()
+    if isinstance(product_data_list, Iterable):
+        for p in product_data_list:
+            urls[p.title] = p.link
+    del product_data_list
+    return urls
+
+
 # save product
 def save_product_item_to_db(item):
-    data = AliProductTable(category1=item['category1'], category2=item['category2'], title=item['title'], link=item['link'], description=item['description'])
+    data = AliProductTable(category1=item['category1'], category2=item['category2'], title=item['title'],
+                           link=item['link'], description=item['description'])
     return data.save()
-

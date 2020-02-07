@@ -3,7 +3,6 @@ import datetime
 from test_spider.util.constant import CONST
 from peewee import *
 
-
 __author__ = 'hanlingzhi'
 
 '''
@@ -21,8 +20,10 @@ database = \
                      'port': CONST.SPIDER_DB_INFO['port'],
                      'use_unicode': True})
 
+
 class UnknownField(object):
     def __init__(self, *_, **__): pass
+
 
 class BaseModel(Model):
     id = BigAutoField()
@@ -30,6 +31,7 @@ class BaseModel(Model):
     class Meta:
         database = database
         order_by = ('id',)
+
 
 # ali_yun product table
 class AliProductTable(BaseModel):
@@ -42,4 +44,3 @@ class AliProductTable(BaseModel):
 
     class Meta:
         table_name = 'ali_yun_product'
-
