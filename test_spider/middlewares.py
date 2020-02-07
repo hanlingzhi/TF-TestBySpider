@@ -4,11 +4,19 @@
 #
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
+import time
 
 from scrapy import signals
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from scrapy.http import HtmlResponse
+from test_spider.util.constant import CONST
+from test_spider.util.print_format_util import PrintFormatUtil
+from test_spider.request.selenium_request import SeleniumRequest
 
 
-class TestSpiderSpiderMiddleware(object):
+class TestSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
@@ -61,14 +69,60 @@ class TestSpiderDownloaderMiddleware(object):
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
+    driver = None
+
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
+        PrintFormatUtil.print_line("重新定义crawler-spider")
         s = cls()
+        # 绑定节点的监听事件
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(s.spider_closed, signal=signals.spider_closed)
         return s
 
     def process_request(self, request, spider):
+        PrintFormatUtil.print_line("spider {} : 开始处理 Request".format(spider.name))
+        if spider.crawl_type.value == 'selenium' and isinstance(request, SeleniumRequest):
+            self.driver.set_window_size(800, 600)
+            self.driver.get(request.url)
+            # copy cookie
+            for cookie_name, cookie_value in request.cookies.items():
+                self.driver.add_cookie(
+                    {
+                        'name': cookie_name,
+                        'value': cookie_value
+                    }
+                )
+            if request.wait_until:
+                WebDriverWait(self.driver, request.wait_time).until(request.wait_until)
+            if request.screen_shot:
+                # Get the actual page dimensions using javascript
+                width = self.driver.execute_script(
+                    "return Math.max(document.body.scrollWidth, document.body.offsetWidth, "
+                    "document.documentElement.clientWidth, document.documentElement.scrollWidth, "
+                    "document.documentElement.offsetWidth);")
+                height = self.driver.execute_script(
+                    "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
+                    "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
+                    "document.documentElement.offsetHeight);")
+                # resize
+                PrintFormatUtil.print_line("reset size {}:{}".format(width, height))
+                self.driver.set_window_size(width, height)
+                time.sleep(1)
+                request.meta['screen_shot'] = self.driver.get_screenshot_as_png()
+            if request.script:
+                self.driver.execute_script(request.script)
+            request.meta['r_dict'] = request.r_dict
+            body = str.encode(self.driver.page_source)
+            # Expose the driver via the "meta" attribute
+            request.meta.update({'driver': self.driver})
+            return HtmlResponse(
+                self.driver.current_url,
+                body=body,
+                encoding='utf-8',
+                request=request
+            )
         # Called for each request that goes through the downloader
         # middleware.
 
@@ -81,6 +135,7 @@ class TestSpiderDownloaderMiddleware(object):
         return None
 
     def process_response(self, request, response, spider):
+        PrintFormatUtil.print_line("spider {} : 开始处理 Response".format(spider.name))
         # Called with the response returned from the downloader.
 
         # Must either;
@@ -100,4 +155,17 @@ class TestSpiderDownloaderMiddleware(object):
         pass
 
     def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        PrintFormatUtil.print_line("spider {} : 开始处理".format(spider.name))
+        PrintFormatUtil.print_line("spider {} , 运行模式 {}".format(spider.name, spider.crawl_type.value))
+        if spider.crawl_type.value == 'selenium':
+            chrome_options = Options()
+            list([chrome_options.add_argument(x) for x in CONST.CHROME_DRIVER_OPTIONS])
+            self.driver = webdriver.Chrome(chrome_options=chrome_options, executable_path=CONST.CHROME_DRIVER_BIN_PATH)
+
+    def spider_closed(self, spider):
+        """Shutdown the driver when spider is closed"""
+        PrintFormatUtil.print_line("spider {} : 结束处理".format(spider.name))
+        if spider.crawl_type.value == 'selenium' and not self.driver is None:
+            PrintFormatUtil.print_line("spider {} : selenium driver 销毁".format(spider.name))
+            self.driver.close()
+            self.driver.quit()
