@@ -6,6 +6,7 @@ from test_spider.util.constant import CONST
 from test_spider.orm import spider_db
 from test_spider.items import ProductItem
 from test_spider.util.print_format_util import PrintFormatUtil
+from test_spider.util.enum import CrawlType
 
 __author__ = 'hanlingzhi'
 
@@ -23,6 +24,8 @@ class ALIProductSpider(scrapy.Spider):
     allowed_domains = [CONST.ALI_YUN_DOMAIN]  # 接受处理的域名
 
     product_list = spider_db.get_product_all()
+
+    crawl_type = CrawlType.scrapy
 
     def start_requests(self):
         PrintFormatUtil.print_line("阿里云已有的服务一共{}个".format(len(self.product_list)))
