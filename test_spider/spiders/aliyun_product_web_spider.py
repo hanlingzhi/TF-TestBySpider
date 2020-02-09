@@ -1,4 +1,5 @@
 import scrapy, os, time
+from PIL import Image
 
 from test_spider.request.selenium_request import SeleniumRequest
 from test_spider.util.constant import CONST
@@ -6,6 +7,7 @@ from test_spider.orm import spider_db
 from test_spider.util.print_format_util import PrintFormatUtil
 from test_spider.util.enum import CrawlType
 from test_spider.util.file import FileUtil
+from test_spider.util.pil_img_ssim import ImageSSIM
 
 __author__ = 'hanlingzhi'
 
@@ -36,11 +38,25 @@ class ALIProductWebDiffSpider(scrapy.Spider):
     def parse(self, response):
         service_pic_path = os.path.join(CONST.PIC_PATH, response.meta['r_dict']['title'])
         os.makedirs(service_pic_path, exist_ok=True)
-        service_pic_name = os.path.join(service_pic_path, str(int(time.time())) + ".png")
+        current_time = str(int(time.time()))
+        service_pic_name = os.path.join(service_pic_path, current_time + ".png")
+        service_pic_small_name = os.path.join(service_pic_path, current_time + "_s.png")
+        service_pic_diff_name = os.path.join(service_pic_path, current_time + "_diff.png")
         PrintFormatUtil.print_line("pic save path {}".format(service_pic_name))
         with open(service_pic_name, 'wb') as image_file:
             image_file.write(response.meta['screen_shot'])
-        del response
+
+        # 设置图片压缩
+        image = Image.open(service_pic_name)
+        w,h  = image.size
+        PrintFormatUtil.print_line("原有图片大小 width {} height {}".format(w,h))
+        d_img = image.resize((int(w/2),int(h/2)),Image.ANTIALIAS)
+        w, h = d_img.size
+        PrintFormatUtil.print_line("处理后的图片大小 width {} height {}".format(w, h))
+        d_img.save(service_pic_small_name, quality=95)
+        del response, image
+        #service_pic_small_name = service_pic_name
+
         # 读取latest文件
         latest_path = os.path.join(service_pic_path, 'latest')
         if os.path.exists(latest_path) and os.path.isfile(latest_path):
@@ -52,10 +68,18 @@ class ALIProductWebDiffSpider(scrapy.Spider):
             old_service_pic_name = os.path.join(service_pic_path, old_file_info_name)
             PrintFormatUtil.print_line("old pic path {}".format(old_service_pic_name))
             if old_file_info_md5 == FileUtil.get_md5(old_service_pic_name):
-                PrintFormatUtil.print_line("比对图片 {} | {}".format(service_pic_name, old_file_info_name))
+                PrintFormatUtil.print_line("比对图片 {} | {}".format(service_pic_small_name, old_file_info_name))
+                # 比对图片
+                iss = ImageSSIM(service_pic_small_name, old_service_pic_name, service_pic_diff_name)
+                s_code = iss.compare_images()
+                PrintFormatUtil.print_line("两者的相似度: {}".format(s_code))
+                if s_code < 1:
+                    iss.output_diff()
+
+
             else:
                 PrintFormatUtil.print_line("old pic md5 error. new {} old {}".format(
                     FileUtil.get_md5(old_service_pic_name),old_file_info_md5))
         # 重新生成latest文件
         with open(latest_path, "w") as file:
-            file.write(os.path.basename(service_pic_name) + " " + FileUtil.get_md5(service_pic_name))
+            file.write(os.path.basename(service_pic_small_name) + " " + FileUtil.get_md5(service_pic_small_name))
