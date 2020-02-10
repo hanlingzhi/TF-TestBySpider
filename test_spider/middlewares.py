@@ -4,16 +4,19 @@
 #
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-import time
+import time, logging
+from syncer import sync
 
 from scrapy import signals
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from scrapy.http import HtmlResponse
+from pyppeteer import launch
 from test_spider.util.constant import CONST
 from test_spider.util.print_format_util import PrintFormatUtil
 from test_spider.request.selenium_request import SeleniumRequest
+from test_spider.request.puppeeter_request import PuppeeterRequest
 
 
 class TestSpiderMiddleware(object):
@@ -123,6 +126,25 @@ class TestSpiderDownloaderMiddleware(object):
                 encoding='utf-8',
                 request=request
             )
+
+        if spider.crawl_type.value == 'puppeeter' and isinstance(request, PuppeeterRequest):
+            page = sync(self.driver.newPage())
+            sync(page.setJavaScriptEnabled(enabled=True))
+            sync(page.setUserAgent(
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'))
+            sync(page.goto(request.url))
+            request.meta['r_dict'] = request.r_dict
+            body = str.encode(sync(page.content()))
+            # Expose the driver via the "meta" attribute
+            request.meta.update({'driver': self.driver})
+            request.meta.update({'page': page})
+            return HtmlResponse(
+                request.url,
+                body=body,
+                encoding='utf-8',
+                request=request
+            )
+
         # Called for each request that goes through the downloader
         # middleware.
 
@@ -161,6 +183,15 @@ class TestSpiderDownloaderMiddleware(object):
             chrome_options = Options()
             list([chrome_options.add_argument(x) for x in CONST.CHROME_DRIVER_OPTIONS])
             self.driver = webdriver.Chrome(chrome_options=chrome_options, executable_path=CONST.CHROME_DRIVER_BIN_PATH)
+        if spider.crawl_type.value == 'puppeeter':
+            pyppeteer_level = logging.WARNING
+            logging.getLogger('pyppeteer').setLevel(pyppeteer_level)
+            logging.getLogger('websockets.protocol').setLevel(pyppeteer_level)
+
+            pyppeteer_logger = logging.getLogger('pyppeteer')
+            pyppeteer_logger.setLevel(logging.WARNING)
+            self.driver = sync(launch({'Headless': True, 'args': ['--no-sandbox', '--disable-gpu'], 'dumpio': True}))
+
 
     def spider_closed(self, spider):
         """Shutdown the driver when spider is closed"""
@@ -169,3 +200,7 @@ class TestSpiderDownloaderMiddleware(object):
             PrintFormatUtil.print_line("spider {} : selenium driver 销毁".format(spider.name))
             self.driver.close()
             self.driver.quit()
+        if spider.crawl_type.value == 'puppeeter' and not self.driver is None:
+            PrintFormatUtil.print_line("spider {} : puppeeter driver 销毁".format(spider.name))
+            sync(self.driver.close())
+
