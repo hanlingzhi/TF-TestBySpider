@@ -22,7 +22,7 @@ usage:
 
 class ALIProductWebDiffSpider(scrapy.Spider):
 
-    name = CONST.ALI_YUN_M_SPIDER_NAME  # 定义爬虫名
+    name = CONST.ALI_YUN_WEB_SPIDER_NAME  # 定义爬虫名
 
     allowed_domains = [CONST.ALI_YUN_DOMAIN]  # 接受处理的域名
 
