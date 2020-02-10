@@ -28,11 +28,15 @@ CONST.ALI_YUN_PRODUCT_URL = 'https://query.aliyun.com/rest/topbar.view.product.a
 
 CONST.ALI_YUN_PRODUCT_SPIDER_NAME = 'ali_product_spider'
 
-#CONST.ALI_YUN_M_URL = 'https://m.aliyun.com'
+CONST.ALI_YUN_WEB_SPIDER_NAME = 'ali_web_spider'
 
-CONST.ALI_YUN_M_URL = 'https://www.aliyun.com/product/petadata'
+CONST.ALI_YUN_M_URL = 'https://m.aliyun.com'
 
 CONST.ALI_YUN_M_SPIDER_NAME = 'ali_m_spider'
+
+CONST.WU_BA_M_URL = 'https://m.58.com'
+
+CONST.ALI_YUN_M_P_SPIDER_NAME = 'ali_m_p_spider'
 
 CONST.ALI_YUN_HEADER = {
     'Content-type': 'application/json; charset=utf-8',
@@ -59,7 +63,7 @@ CONST.CHROME_DRIVER_PAGE_LOAD_TIMEOUT = 200
 
 CONST.SPIDER_DB_INFO = {
     'database': 'qa_plat',
-    'host': 'dev-mysql.danke.life',
+    'host': '**********',
     'user': 'dev_qa_plat_writer',
     'password': 'VUDQWApJs3ZGT7Js',
     'port':3306,
