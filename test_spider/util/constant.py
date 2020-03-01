@@ -62,9 +62,9 @@ CONST.CHROME_DRIVER_OPTIONS = [
 CONST.CHROME_DRIVER_PAGE_LOAD_TIMEOUT = 200
 
 CONST.SPIDER_DB_INFO = {
-    'database': 'qa_plat',
-    'host': '**********',
-    'user': 'dev_qa_plat_writer',
-    'password': 'VUDQWApJs3ZGT7Js',
+    'database': 'hanlingzhi',
+    'host': 'localhost',
+    'user': 'hanlingzhi',
+    'password': '123456',
     'port':3306,
 }
