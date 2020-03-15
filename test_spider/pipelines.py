@@ -30,6 +30,8 @@ class TestSpiderPipeline(object):
         PrintFormatUtil.print_line(self.__module__)
         if spider.name == CONST.ALI_YUN_PRODUCT_SPIDER_NAME:
             result = spider_db.save_product_item_to_db(item)
+        if spider.name == CONST.ALI_YUN_WEB_SPIDER_NAME:
+            result = spider_db.save_record_item_to_db(item)
         if result == 1:
             PrintFormatUtil.print_success("spider %s success ..." % str(item).strip())
             self.counter[spider.name].add()
