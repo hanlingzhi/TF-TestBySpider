@@ -13,7 +13,7 @@ usage: data model
 # connect mysql
 database = \
     MySQLDatabase(CONST.SPIDER_DB_INFO['database'],
-                  **{'charset': 'utf8',
+                  **{'charset': 'utf8mb4',
                      'passwd': CONST.SPIDER_DB_INFO['password'],
                      'user': CONST.SPIDER_DB_INFO['user'],
                      'host': CONST.SPIDER_DB_INFO['host'],
@@ -41,6 +41,18 @@ class AliProductTable(BaseModel):
     title = CharField()
     description = CharField()
     link = CharField()
-
     class Meta:
         table_name = 'ali_yun_product'
+
+class TestRecordTable(BaseModel):
+    tid = BigIntegerField()
+    pid = BigIntegerField()
+    pic_new = CharField()
+    pic_old = CharField()
+    pl_ssim = DecimalField(max_digits=20, decimal_places=17)
+    cv_ssim = DecimalField(max_digits=20, decimal_places=17)
+    pic_pl_diff = CharField()
+    pic_oc_diff = CharField()
+    create_time = DateTimeField(default=datetime.datetime.now)
+    class Meta:
+        table_name = 'record'
