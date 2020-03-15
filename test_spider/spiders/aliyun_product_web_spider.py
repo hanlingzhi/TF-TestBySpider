@@ -9,6 +9,7 @@ from test_spider.util.enum import CrawlType
 from test_spider.util.file import FileUtil
 from test_spider.util.pil_img_ssim import ImageSSIM
 from test_spider.util.opencv_img_ssim import OpenCVSSIM
+from test_spider.items import RecordItem
 
 __author__ = 'hanlingzhi'
 
@@ -30,12 +31,16 @@ class ALIProductWebDiffSpider(scrapy.Spider):
 
     link_list = spider_db.get_product_url_all()
 
+    def __init__(self, t_id=None, *args, **kwargs):
+        super(scrapy.Spider, self).__init__(*args, **kwargs)
+        self.t_id = t_id
+
     def start_requests(self):
-        for service_name, service_url in self.link_list.items():
-            PrintFormatUtil.print_line("检查{}的页面, url {}".format(service_name, service_url))
-            args_dict = {'title': service_name}
-            yield SeleniumRequest(url=service_url, callback=self.parse, screen_shot=True, wait_time=20,
-                                  r_dict=args_dict)
+        for p in self.link_list:
+            PrintFormatUtil.print_line("检查({}){}的页面, url {}".format(p.get_id(), p.get_name(), p.get_url()))
+            args_dict = {'title': p.get_name(), 'id': p.get_id()}
+            yield SeleniumRequest(url=p.get_url(), callback=self.parse, screen_shot=True, wait_time=20,
+                                r_dict=args_dict)
 
     def parse(self, response):
         service_pic_path = os.path.join(CONST.PIC_PATH, response.meta['r_dict']['title'])
@@ -57,8 +62,10 @@ class ALIProductWebDiffSpider(scrapy.Spider):
         w, h = d_img.size
         PrintFormatUtil.print_line("处理后的图片大小 width {} height {}".format(w, h))
         d_img.save(service_pic_small_name, quality=95)
+        args = response.meta['r_dict']
         del response, image
 
+        is_finish = False
         # 读取latest文件
         latest_path = os.path.join(service_pic_path, 'latest')
         if os.path.exists(latest_path) and os.path.isfile(latest_path):
@@ -79,12 +86,27 @@ class ALIProductWebDiffSpider(scrapy.Spider):
                 PrintFormatUtil.print_line("PIL库两者的相似度: {}".format(pil_s_code))
                 PrintFormatUtil.print_line("OPEN_CV库两者的相似度: {}".format(oc_s_code))
                 # 这个值可以设置(0-1),  1 非常严格
-                if pil_s_code < 1 and oc_s_code < 1:
-                    iss.output_diff()
-                    o_iss.output_diff()
+                iss.output_diff()
+                o_iss.output_diff()
+                is_finish = True
             else:
                 PrintFormatUtil.print_line("old pic md5 error. new {} old {}".format(
                     FileUtil.get_md5(old_service_pic_name),old_file_info_md5))
         # 重新生成latest文件
         with open(latest_path, "w") as file:
             file.write(os.path.basename(service_pic_small_name) + " " + FileUtil.get_md5(service_pic_small_name))
+
+        # 上报数据到数据库
+        if self.t_id is not None and is_finish:
+            PrintFormatUtil.print_line("上报 id=%s 任务数据" % self.t_id)
+            item = RecordItem()
+            item['tid'] = self.t_id
+            item['pid'] = args['id']
+            item['pic_new'] = service_pic_small_name
+            item['pic_old'] = old_service_pic_name
+            item['pl_ssim'] = float('%.17f' % pil_s_code)
+            item['cv_ssim'] = float('%.17f' % oc_s_code)
+            item['pic_pl_diff'] = service_pic_diff_name
+            item['pic_oc_diff'] = service_pic_oc_diff_name
+            yield item
+
